@@ -19,7 +19,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         # "http://localhost:3000",
-        "https://all-video-downloader.vercel.app"
+        "https://all-video-downloader-two.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
