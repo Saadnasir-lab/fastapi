@@ -1,0 +1,11 @@
+cat > .dockerignore << EOF
+.venv
+venv
+__pycache__
+*.pyc
+.env
+.git
+.gitignore
+README.md
+.python-version
+EOF
