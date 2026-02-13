@@ -3,42 +3,27 @@ FROM python:3.14-slim-bookworm
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    UV_SYSTEM_PYTHON=1 \
-    PATH="/app/.venv/bin:$PATH"  # Add this line
+    PYTHONUNBUFFERED=1
 
-# Install system dependencies
+# Install system dependencies for yt-dlp
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        gcc \
-        g++ \
-        ffmpeg \
-        curl \
+    && apt-get install -y --no-install-recommends ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+# Copy and install dependencies
+COPY pyproject.toml README.md ./
+RUN pip install --no-cache-dir .
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
+# Copy application code
+COPY main.py .
+COPY server/ ./server/ 2>/dev/null || true
 
-# Install dependencies
-RUN uv sync --frozen --no-dev
-
-# Copy the rest of the application
-COPY . .
-
-# Create non-root user with proper UID (use >1000)
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 --gid 1001 appuser && \
-    chown -R appuser:appgroup /app
-
+# Create non-root user
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8080
 
-# Use direct path to uvicorn
-CMD ["/app/.venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "info"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
