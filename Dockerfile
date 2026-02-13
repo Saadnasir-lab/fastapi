@@ -3,25 +3,33 @@ FROM python:3.14-slim-bookworm
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies for yt-dlp
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        gcc \
+        curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install dependencies
-COPY pyproject.toml README.md ./
+# Copy only pyproject.toml
+COPY pyproject.toml ./
+
+# Install the package
 RUN pip install --no-cache-dir .
 
-# Copy application code
+# Copy the application
 COPY main.py .
-COPY server/ ./server/ 2>/dev/null || true
 
 # Create non-root user
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --gid 1001 --home /app appuser && \
+    chown -R appuser:appgroup /app
+
 USER appuser
 
 EXPOSE 8080
